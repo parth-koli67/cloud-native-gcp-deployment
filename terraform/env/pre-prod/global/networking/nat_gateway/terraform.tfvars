@@ -1,0 +1,6 @@
+project_id   = "personal-project-1-458808"
+region       = "us-central1"
+vpc_name     = "main-vpc"
+nat_name     = "main-vpc-us-est1-nat"
+router_name  = "main-vpc-us-est1-cr"
+address_name = "main-vpc-us-est1-nat-ext-ip"

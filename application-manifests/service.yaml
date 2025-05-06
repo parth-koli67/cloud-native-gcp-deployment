@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-app-svc
+  namespace: app-ns
+  annotations:
+    cloud.google.com/neg: '{"exposed_ports": {"80":{"name": "python-app-neg"}}}'
+spec:
+  type: ClusterIP
+  selector:
+      run: python-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
