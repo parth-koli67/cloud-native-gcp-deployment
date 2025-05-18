@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Todo App</title>
+</head>
+<body>
+    <h1>Todo List</h1>
+    <ul>
+        {% for todo in todos %}
+            <li>
+                {{ todo.task }} - Completed: {{ todo.completed }}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Add New Todo</h2>
+    <form id="new-todo-form">
+        <label for="task">Task:</label>
+        <input type="text" id="task" name="task">
+        <button type="button" onclick="addTodo()">Add</button>
+    </form>
+
+    <script>
+        async function addTodo() {
+            const task = document.getElementById('task').value;
+            if (!task) {
+                alert('Please enter a task.');
+                return;
+            }
+
+            const response = await fetch('/todos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ task: task })
+            });
+
+            if (response.ok) {
+                location.reload(); // Refresh the page
+            } else {
+                alert('Error adding todo.');
+            }
+        }
+    </script>
+</body>
+</html>
