@@ -1,0 +1,97 @@
+
+name: Application CICD POC
+
+on:
+  push:
+    branches: [ "main" ] # Replace with your desired branches
+  pull_request:
+    branches: [ "main" ] # Replace with your desired branches
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  GAR_REPOSITORY: 
+  GAR_REGION: us-central1
+  GAR_PROJECT_ID: <project-id>
+  MajorVersion: 7
+  MinorVersion: 0
+  ReleaseVersion: 0
+  BuildVersion: 0
+
+jobs:
+  build-x64:
+    runs-on: ubuntu
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set COMMITHASH env
+        run: |
+         # Get the commit SHA from GitHub context (Bash syntax for variable assignment)
+         commitHash="${{ github.sha }}" 
+         # Get the first 7 characters (Bash substring syntax)
+         shortCommitHash=${commitHash:0:7} 
+         # Set the environment variable for subsequent steps (Bash syntax to append to GITHUB_ENV)
+         echo "COMMITHASH=$shortCommitHash" >> $GITHUB_ENV
+
+      - id: auth
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v0.4.0"
+        with:
+          create_credentials_file: "true"
+          workload_identity_provider: "projects/<project>/locations/global/workloadIdentityPools/github-actions-pool/providers/github"
+          service_account: "<service-account>@<project-id>.iam.gserviceaccount.com"  # the service account for github actions
+           
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v1"
+        
+      - name: "Use gcloud CLI"
+        run: "gcloud info"
+          
+      - id: gcloud
+        name: "gcloud"
+        run: |-
+         gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"  
+
+      - name: Authenticate to Container Registry
+        run: |
+            gcloud auth configure-docker ${{ env.GAR_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build Applicattion Image
+        run: |  
+            docker buildx build \
+             --push \
+             -t us-central1-docker.pkg.dev/${{ env.GAR_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ADMIN }}:latest \
+             -t us-central1-docker.pkg.dev/${{ env.GAR_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ADMIN }}:${{ env.MajorVersion }}.${{ env.MinorVersion }}.${{ env.ReleaseVersion }}.${{ env.BuildVersion }}-${{ env.COMMITHASH }} \
+             .
+
+      - name: Checkout manifests branch
+        run: |
+          git fetch origin
+          git stash
+          git checkout manifests
+
+      - name: Update Deployment Tag and Convert to YAML and Commit and Push changes for the Application
+        run: |
+          # Set the tag name using Bash variable assignment
+          TAG_NAME="${{ env.MajorVersion }}.${{ env.MinorVersion }}.${{ env.ReleaseVersion }}.${{ env.BuildVersion }}-${{ env.COMMITHASH }}"
+          
+          # Use sed to replace 'latest' with the new tag name in the template
+          # Reads deployment.tpl, performs substitution, and writes to deployment.yaml
+          # 's/latest/$TAG_NAME/g' means substitute 'latest' with the value of $TAG_NAME, globally on each line
+          sed "s/latest/$TAG_NAME/g" deployment.tpl > deployment.yaml
+          
+          # Git commands (already Bash)
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git add deployment.yaml
+          git commit -m "Update deployment tag to ${TAG_NAME}"
+          git push origin manifests
+        shell: bash # Explicitly setting bash is good
+
+
+             
+
+
+             
