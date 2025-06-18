@@ -1,0 +1,12 @@
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: backend-policy
+  namespace: app-ns
+spec:
+  default:
+    securityPolicy: armor-policy
+  targetRef:
+    group: ""
+    kind: Service
+    name: python-app-svc

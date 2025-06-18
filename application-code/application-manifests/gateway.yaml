@@ -1,0 +1,23 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1beta1
+metadata:
+  name: app-gtw
+  namespace: app-ns
+  annotations:
+    networking.gke.io/certmap: cert-map
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  addresses:
+  - type: NamedAddress
+    value: py-app-ext-ip         # Reserved external IP
+  listeners:
+  - name: https
+    protocol: HTTPS
+    port: 443
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector: 
+          matchLabels:
+            route-namespace: allow-python-app-route
+    
