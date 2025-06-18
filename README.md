@@ -12,8 +12,7 @@ This repository provides a modular and reusable setup for deploying infrastructu
 - Infrastructure as Code using **Terraform**
   - VPC, GKE cluster, IAM, Artifact Registry, etc.
 - Kubernetes deployment setup using **kubectl** or **Kustomize**
-- Environment-specific configurations (dev, staging, prod)
-- Scripts for bootstrap/init tasks
+- Environment-specific configurations (dev, pre-prod, prod)
 
 ---
 
@@ -24,13 +23,13 @@ cloud-native-gcp-deployment/
 ├── terraform/
 │   ├── modules/            # Reusable Terraform modules (network, GKE, IAM)
 │   ├── dev/                # Dev environment configurations
-│   ├── staging/
+│   ├── pre-prod/
 │   └── prod/
 ├── kubernetes/
 │   ├── base/               # Shared k8s resources (ConfigMaps, Secrets)
 │   └── overlays/           # Environment-specific deployment configs
 │       ├── dev/
-│       ├── staging/
+│       ├── pre-prod/
 │       └── prod/
 │   └── gateway/            # Gateway and HTTPRoute configurations
 ├── scripts/
