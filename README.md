@@ -86,6 +86,16 @@ This creates:
 gcloud container clusters get-credentials <CLUSTER_NAME> --zone us-central1-c
 ```
 
+> Note: Here we can utilise two methods of connecting to the cluster:
+>  1. By authorising our working environment IP address/range in the Authorised network section of the control plane,
+>  2. By using flag `--dns-endpoint`, this is a newly introduced feature of GKE which authorises the user based on the IAM level roles/permissions. Here the user need to have the role of "Kubernetes Developer" for accessing the GKE cluster using this flag.
+
+  Example for `--dns-endpoint`
+  ```bash
+  gcloud container clusters get-credentials <CLUSTER_NAME> --zone us-central1-c --dns-endpoint
+  ```
+
+
 ### 4. Deploy Kubernetes Workloads
 
 ```bash
@@ -103,7 +113,7 @@ Use `kubectl get pods` and `kubectl get svc` to check application and service st
 - `gke-cluster/` – GKE provisioning
 - `iam/` – IAM roles and service accounts
 
-Each module is written to be reusable across environments.
+Each module is written to be reusable across environments, and follows the root and calling modules structure with GCS buckets mapped as the backend to store and maintain the terraform states across the whole project.
 
 ---
 
@@ -142,15 +152,52 @@ kubernetes/base/gateway/
 gcloud compute addresses create my-gateway-ip   --global   --ip-version=IPV4
 ```
 
-#### Create a Google-Managed SSL Certificate
+## 🌐 Google Certificate Manager – Full HTTPS Setup with GKE Gateway
+
+To enable HTTPS using a custom domain in GKE Gateway, we follow a multi-step process involving **domain authorization**, **wildcard certificate creation**, and **certificate map configuration**.
+
+### 1. 🔐 Domain Authorization
+
+Before creating a certificate, you must prove ownership of the domain.
 
 ```bash
-gcloud compute ssl-certificates create wildcard-cert   --domains="*.your-domain.com"   --global
+gcloud certificate-manager dns-authorizations create wildcard-yourdomain-com-auth \
+  --domain="*.yourdomain.com" \
+  --project=YOUR_PROJECT_ID
 ```
 
-Assign the certificate via Gateway annotation or frontend config (Depending on GKE version and API used)
+### 📜 Create a Wildcard SSL Certificate
+Once the domain is authorized (DNS record is propagated), you can create a managed wildcard certificate:
+```bash
+gcloud certificate-manager certificates create wildcard-yourdomain-com-cert \
+  --domains="*.yourdomain.com" \
+  --dns-authorizations=wildcard-yourdomain-com-auth \
+  --project=YOUR_PROJECT_ID
+```
 
-For advanced TLS customization, you can instead create a Kubernetes Secret and reference it in the `certificateRefs` field of `gateway.yaml`.
+### 🗺️ Create a Certificate Map
+A certificate map helps route traffic to the correct certificate based on the domain name:
+```bash
+gcloud certificate-manager maps create wildcard-map \
+  --project=YOUR_PROJECT_ID
+```
+
+Then bind the certificate to this map using a map entry:
+```bash
+gcloud certificate-manager map-entries create wildcard-map-entry \
+  --map=wildcard-map \
+  --hostname="*.yourdomain.com" \
+  --certificates=wildcard-yourdomain-com-cert \
+  --project=YOUR_PROJECT_ID
+```
+
+🚪 Reference the Certificate Map in GKE Gateway
+In your `gateways.yaml`, reference the certificate map by supplying the map that is created follwing the above steps, and add the below argument:
+
+```bash
+annotations:
+    networking.gke.io/certmap: cert-map
+```
 
 ### 🔁 HTTP → HTTPS Redirect (Optional)
 
@@ -196,14 +243,6 @@ This setup avoids committing service account keys to the repo and supports least
 
 ---
 
-## 📌 Roadmap
-
-- Automate Terraform via remote backend (e.g. GCS + state locking)
-- Add monitoring/logging setup using GCP’s Ops suite
-- Secure secrets using GCP Secret Manager
-
----
-
 ## 📚 References
 
 - [Terraform GCP Provider](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
@@ -223,3 +262,17 @@ Forking or reuse without permission is discouraged. See LICENSE for more.
 
 **Parth Koli**  
 [GitHub](https://github.com/parth0607/cloud-native-gcp-deployment) | [LinkedIn](https://www.linkedin.com/in/parth-koli-80332a232/)
+
+
+</br>
+
+#### 🛠️ Ongoing Work
+
+Upcoming projects/scenarios include:
+
+- Production ready GCP Shared VPC structured environment.   
+- Advanced CI/CD using ArgoCD and Github Actions. 
+
+
+Stay tuned for updates!
+
