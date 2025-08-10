@@ -266,11 +266,18 @@ Forking or reuse without permission is discouraged. See LICENSE for more.
 
 </br>
 
+### 🌐 Explore My Other Projects
+
+| Project | Description |
+|---------|-------------|
+| 🚀 [terraform-gcp-shared-vpc-scaffold](https://github.com/parth-koli67/terraform-gcp-shared-vpc-scaffold) | A production-ready scaffold for deploying a secure GCP Landing Zone with Shared VPC. |
+
+</br>
+
 #### 🛠️ Ongoing Work
 
 Upcoming projects/scenarios include:
-
-- Production ready GCP Shared VPC structured environment.   
+  
 - Advanced CI/CD using ArgoCD and Github Actions. 
 
 
